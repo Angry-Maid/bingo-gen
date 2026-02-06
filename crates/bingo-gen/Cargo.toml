@@ -1,0 +1,12 @@
+[package]
+name = "bingo-gen"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+frontend.workspace = true
+backend.workspace = true
+bridge.workspace = true
+
+log.workspace = true
+tracing-subscriber.workspace = true

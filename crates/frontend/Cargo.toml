@@ -1,0 +1,18 @@
+[package]
+name = "frontend"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bridge.workspace = true
+
+anyhow.workspace = true
+gpui-component.workspace = true
+gpui.workspace = true
+itertools.workspace = true
+log.workspace = true
+rust-embed.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+tokio.workspace = true
