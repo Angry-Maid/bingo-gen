@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.1.1] - 2026-02-07
 
 ### 🐛 Bug Fixes
 
@@ -7,6 +7,8 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Fix workflow name typo
+- Update CHANGELOG for v0.1.1
+- Bump ver
 ## [0.1.0] - 2026-02-06
 
 ### ⚙️ Miscellaneous Tasks
