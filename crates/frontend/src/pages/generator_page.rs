@@ -16,9 +16,7 @@ use gpui_component::{
     form::{field, v_form},
     input::{Input, InputState},
     notification::NotificationType,
-    red_600, red_800,
-    tooltip::Tooltip,
-    v_flex,
+    red_600, red_800, v_flex,
 };
 use itertools::izip;
 use strum::{EnumIter, FromRepr, IntoEnumIterator};
@@ -102,14 +100,14 @@ impl Render for GeneratorPage {
 
             match self.selected_grid_size {
                 GridSize::Size3 => {
-                    start = vec!["".to_string(); 6];
-                    fill = vec!["".to_string(); 2];
-                    end = vec!["".to_string(); 4];
+                    start = vec![" ".to_string(); 6];
+                    fill = vec![" ".to_string(); 2];
+                    end = vec![" ".to_string(); 4];
                 }
                 GridSize::Size4 => {
-                    start = vec!["".to_string(); 0];
-                    fill = vec!["".to_string(); 1];
-                    end = vec!["".to_string(); 5];
+                    start = vec![" ".to_string(); 0];
+                    fill = vec![" ".to_string(); 1];
+                    end = vec![" ".to_string(); 5];
                 }
                 _ => {}
             }
