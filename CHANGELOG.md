@@ -1,3 +1,21 @@
+## [0.1.3] - 2026-07-05
+
+### 🚀 Features
+
+- *(lockout_live)* Update json schema to v3
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump ver
+## [0.1.2] - 2026-07-05
+
+### 🚀 Features
+
+- Rewrite save action
+
+### 💼 Other
+
+- Bump
 ## [0.1.1] - 2026-02-07
 
 ### 🐛 Bug Fixes
@@ -9,6 +27,7 @@
 - Fix workflow name typo
 - Update CHANGELOG for v0.1.1
 - Bump ver
+- Update CHANGELOG
 ## [0.1.0] - 2026-02-06
 
 ### ⚙️ Miscellaneous Tasks
