@@ -19,6 +19,7 @@ use gpui_component::{
     red_600, red_800, v_flex,
 };
 use itertools::izip;
+use log::info;
 use strum::{EnumIter, FromRepr, IntoEnumIterator};
 
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, EnumIter, FromRepr)]
@@ -148,7 +149,7 @@ impl Render for GeneratorPage {
                         let objectives = v
                             .iter()
                             .enumerate()
-                            .map(|(idx, v)| LockoutLiveCard::new(v.to_owned(), idx + 1))
+                            .map(|(idx, v)| LockoutLiveCard::new(v.to_owned(), vec![idx + 1]))
                             .collect::<Vec<LockoutLiveCard>>();
 
                         if objectives.iter().any(|v| v.goal.len() > 60) {
@@ -161,14 +162,18 @@ impl Render for GeneratorPage {
                             );
                         } else {
                             let data = LockoutLiveBoard {
-                                version: "0.0.0".to_string(),
-                                game: "None".to_string(),
+                                schema_version: 3,
+                                schema_mode: "relaxed".to_owned(),
+                                game_name: "None".to_string(),
+                                tag_names: Default::default(),
                                 objectives,
                                 limits: HashMap::from([
                                     ("board".to_string(), HashMap::default()),
                                     ("line".to_string(), HashMap::default()),
                                 ]),
                             };
+
+                            info!("{:?}", data);
 
                             self.backend_handle
                                 .send(MessageToBackend::CreateLockoutLiveFile { data });
