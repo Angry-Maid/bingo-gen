@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "backend"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "bridge",
@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "bingo-gen"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "backend",
  "bridge",
@@ -690,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "bridge"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "tokio",
@@ -1849,7 +1849,7 @@ dependencies = [
 
 [[package]]
 name = "frontend"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "bridge",
