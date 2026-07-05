@@ -34,14 +34,18 @@ enum GridSize {
     Size9,
 }
 
+enum PageAction {
+    Clear,
+    SaveBingosync,
+    SaveLockout,
+}
+
 pub struct GeneratorPage {
     focus_handle: FocusHandle,
     backend_handle: BackendHandle,
     cell_inputs: [Entity<InputState>; 9 * 9],
     selected_grid_size: GridSize,
-    trigger_clear: bool,
-    save_bingosync: bool,
-    save_lockout: bool,
+    page_action: Option<PageAction>,
 }
 
 impl GeneratorPage {
@@ -57,9 +61,7 @@ impl GeneratorPage {
                 cx.new(|cx| InputState::new(window, cx).auto_grow(2, 2))
             }),
             selected_grid_size: Default::default(),
-            trigger_clear: false,
-            save_bingosync: false,
-            save_lockout: false,
+            page_action: None,
         }
     }
 }
@@ -72,124 +74,110 @@ impl Focusable for GeneratorPage {
 
 impl Render for GeneratorPage {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if self.save_bingosync {
-            let v: Vec<String> = self
-                .cell_inputs
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, i)| {
-                    let border = (9 - self.selected_grid_size as usize).div_euclid(2);
-                    let even = (self.selected_grid_size as usize + 1) % 2;
-                    let x = idx % 9;
-                    let y = idx.div_euclid(9);
+        if let Some(action) = self.page_action.as_mut() {
+            if matches!(action, PageAction::Clear) {
+                self.cell_inputs
+                    .iter()
+                    .for_each(|e| e.update(cx, |is, cx| is.set_value("", window, cx)));
+                self.focus_handle.focus(window);
+            }
 
-                    if x >= border + even && x < 9 - border && y >= border + even && y < 9 - border
-                    {
-                        Some(i.read(cx).value().to_string())
-                    } else {
-                        None
+            if matches!(action, PageAction::SaveBingosync | PageAction::SaveLockout) {
+                let v: Vec<String> = self
+                    .cell_inputs
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, i)| {
+                        let border = (9 - self.selected_grid_size as usize).div_euclid(2);
+                        let even = (self.selected_grid_size as usize + 1) % 2;
+                        let x = idx % 9;
+                        let y = idx.div_euclid(9);
+
+                        if x >= border + even
+                            && x < 9 - border
+                            && y >= border + even
+                            && y < 9 - border
+                        {
+                            Some(i.read(cx).value().to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                match action {
+                    PageAction::SaveBingosync => {
+                        let mut start: Vec<String> = vec![];
+                        let mut fill: Vec<String> = vec![];
+                        let mut end: Vec<String> = vec![];
+
+                        let mut res: Vec<String> = vec![];
+
+                        match self.selected_grid_size {
+                            GridSize::Size3 => {
+                                start = vec![" ".to_string(); 6];
+                                fill = vec![" ".to_string(); 2];
+                                end = vec![" ".to_string(); 4];
+                            }
+                            GridSize::Size4 => {
+                                start = vec![" ".to_string(); 0];
+                                fill = vec![" ".to_string(); 1];
+                                end = vec![" ".to_string(); 5];
+                            }
+                            _ => {}
+                        }
+
+                        res.extend(start);
+
+                        for chunk in v.chunks_exact(self.selected_grid_size as usize) {
+                            res.extend(chunk.to_vec());
+                            res.extend(fill.clone());
+                        }
+
+                        res.extend(end);
+
+                        let data = res
+                            .iter()
+                            .map(|v| BingoSyncCard { name: v.to_owned() })
+                            .collect::<Vec<BingoSyncCard>>();
+
+                        self.backend_handle
+                            .send(MessageToBackend::CreateBingoSyncFile { data });
                     }
-                })
-                .collect();
+                    PageAction::SaveLockout => {
+                        let objectives = v
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, v)| LockoutLiveCard::new(v.to_owned(), idx + 1))
+                            .collect::<Vec<LockoutLiveCard>>();
 
-            let mut start: Vec<String> = vec![];
-            let mut fill: Vec<String> = vec![];
-            let mut end: Vec<String> = vec![];
+                        if objectives.iter().any(|v| v.goal.len() > 60) {
+                            window.push_notification(
+                                (
+                                    NotificationType::Warning,
+                                    "Lockout Live can't have a task text longer than 60 characters.",
+                                ),
+                                cx,
+                            );
+                        } else {
+                            let data = LockoutLiveBoard {
+                                version: "0.0.0".to_string(),
+                                game: "None".to_string(),
+                                objectives,
+                                limits: HashMap::from([
+                                    ("board".to_string(), HashMap::default()),
+                                    ("line".to_string(), HashMap::default()),
+                                ]),
+                            };
 
-            let mut res: Vec<String> = vec![];
-
-            match self.selected_grid_size {
-                GridSize::Size3 => {
-                    start = vec![" ".to_string(); 6];
-                    fill = vec![" ".to_string(); 2];
-                    end = vec![" ".to_string(); 4];
-                }
-                GridSize::Size4 => {
-                    start = vec![" ".to_string(); 0];
-                    fill = vec![" ".to_string(); 1];
-                    end = vec![" ".to_string(); 5];
-                }
-                _ => {}
-            }
-
-            res.extend(start);
-
-            for chunk in v.chunks_exact(self.selected_grid_size as usize) {
-                res.extend(chunk.to_vec());
-                res.extend(fill.clone());
-            }
-
-            res.extend(end);
-
-            let data = res
-                .iter()
-                .map(|v| BingoSyncCard { name: v.to_owned() })
-                .collect::<Vec<BingoSyncCard>>();
-
-            self.backend_handle
-                .send(MessageToBackend::CreateBingoSyncFile { data });
-
-            self.save_bingosync = false;
-        }
-
-        if self.save_lockout {
-            let v: Vec<String> = self
-                .cell_inputs
-                .iter()
-                .enumerate()
-                .filter_map(|(idx, i)| {
-                    let border = (9 - self.selected_grid_size as usize).div_euclid(2);
-                    let even = (self.selected_grid_size as usize + 1) % 2;
-                    let x = idx % 9;
-                    let y = idx.div_euclid(9);
-
-                    if x >= border + even && x < 9 - border && y >= border + even && y < 9 - border
-                    {
-                        Some(i.read(cx).value().to_string())
-                    } else {
-                        None
+                            self.backend_handle
+                                .send(MessageToBackend::CreateLockoutLiveFile { data });
+                        }
                     }
-                })
-                .collect();
-
-            let objectives = v
-                .iter()
-                .enumerate()
-                .map(|(idx, v)| LockoutLiveCard::new(v.to_owned(), idx + 1))
-                .collect::<Vec<LockoutLiveCard>>();
-
-            if objectives.iter().any(|v| v.goal.len() > 60) {
-                window.push_notification(
-                    (
-                        NotificationType::Warning,
-                        "Lockout Live can't have a task text longer than 60 characters.",
-                    ),
-                    cx,
-                );
-            } else {
-                let data = LockoutLiveBoard {
-                    version: "0.0.0".to_string(),
-                    game: "None".to_string(),
-                    objectives,
-                    limits: HashMap::from([
-                        ("board".to_string(), HashMap::default()),
-                        ("line".to_string(), HashMap::default()),
-                    ]),
-                };
-
-                self.backend_handle
-                    .send(MessageToBackend::CreateLockoutLiveFile { data });
+                    _ => unreachable!(),
+                }
             }
-
-            self.save_lockout = false;
-        }
-
-        if self.trigger_clear {
-            self.cell_inputs
-                .iter()
-                .for_each(|e| e.update(cx, |is, cx| is.set_value("", window, cx)));
-            self.focus_handle.focus(window);
-            self.trigger_clear = false;
+            self.page_action = None;
         }
 
         v_flex()
@@ -234,7 +222,8 @@ impl Render for GeneratorPage {
                                                 return;
                                             }
                                             if !(v + 3 == view.selected_grid_size as usize) {
-                                                view.trigger_clear = true;
+                                                // view.trigger_clear = true;
+                                                view.page_action = Some(PageAction::Clear);
                                             }
                                             view.selected_grid_size =
                                                 GridSize::from_repr(v + 3).unwrap();
@@ -301,9 +290,16 @@ impl Render for GeneratorPage {
                                         |view, selected: &Vec<usize>, _w, cx| {
                                             match selected.first() {
                                                 Some(0) => randomize_action(),
-                                                Some(1) => view.trigger_clear = true,
-                                                Some(2) => view.save_bingosync = true,
-                                                Some(3) => view.save_lockout = true,
+                                                Some(1) => {
+                                                    view.page_action = Some(PageAction::Clear)
+                                                }
+                                                Some(2) => {
+                                                    view.page_action =
+                                                        Some(PageAction::SaveBingosync)
+                                                }
+                                                Some(3) => {
+                                                    view.page_action = Some(PageAction::SaveLockout)
+                                                }
                                                 _ => {
                                                     return;
                                                 }
